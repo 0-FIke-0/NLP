@@ -1,0 +1,6 @@
+from sklearn.feature_extraction.text import TfidfVectorizer
+tfidf = TfidfVectorizer(ngram_range=(1, 2))
+x = tfidf.fit_transform(df["text"])
+for i in x.toarray().argsort()[:, -50:]:
+    for i1 in i:
+        df["keyword_"+tfidf.get_feature_names_out()[i1].replace(" ", "_")] = x.toarray()[:, i1]
