@@ -1,0 +1,57 @@
+import sys
+from PyQt5.QtWidgets import QWidget, QMessageBox, QApplication, QMainWindow
+import pickle
+from qtpy import uic
+import nltk
+import catboost
+from sklearn.feature_extraction.text import TfidfVectorizer
+import traceback
+nltk.download("stopwords")
+from nltk.corpus import stopwords
+from string import punctuation
+english_stopwords = stopwords.words('english')
+from nltk.stem import WordNetLemmatizer
+
+class Example(QMainWindow):
+
+    def __init__(self):
+        super().__init__()
+        uic.loadUi("untitled.ui", self)
+        self.lineEdit_2.setEnabled(False)
+        self.pushButton.clicked.connect(self.click)
+
+    def click(self):
+        with open('final_model', 'rb') as f:
+            model = pickle.load(f)
+        with open('vectorizer', 'rb') as f:
+            vectorizer = pickle.load(f)
+        def remove_punct(text):
+            table = {33: ' ', 34: ' ', 35: ' ', 36: ' ', 37: ' ', 38: ' ', 39: ' ', 40: ' ', 41: ' ', 42: ' ', 43: ' ',
+                     44: ' ', 45: ' ', 46: ' ', 47: ' ', 58: ' ', 59: ' ', 60: ' ', 61: ' ', 62: ' ', 63: ' ', 64: ' ',
+                     91: ' ', 92: ' ', 93: ' ', 94: ' ', 95: ' ', 96: ' ', 123: ' ', 124: ' ', 125: ' ', 126: ' '}
+            return text.translate(table)
+
+        test = str(self.textEdit.toPlainText())
+        lemma = WordNetLemmatizer()
+        test = test.lower()
+        test = remove_punct(test)
+        test = test.split(' ')
+        test = [token for token in test if token not in english_stopwords and token != " " and token.strip() not in punctuation]
+        test = [lemma.lemmatize(word) for word in test]
+        test = ' '.join(test)
+        x1 = vectorizer.transform([test])
+        self.lineEdit_2.setText(str(int(model.predict(x1)[0])))
+
+def excepthook(exc_type, exc_value, exc_tb):
+    tb = "".join(traceback.format_exception(exc_type, exc_value, exc_tb))
+    print("Oбнаружена ошибка !:", tb)
+#    QtWidgets.QApplication.quit()             # !!! если вы хотите, чтобы событие завершилось
+
+
+sys.excepthook = excepthook
+if __name__ == '__main__':
+
+    app = QApplication(sys.argv)
+    ex = Example()
+    ex.show()
+    sys.exit(app.exec_())
