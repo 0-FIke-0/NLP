@@ -4,3 +4,139 @@ x = tfidf.fit_transform(df["text"])
 for i in x.toarray().argsort()[:, -50:]:
     for i1 in i:
         df["keyword_"+tfidf.get_feature_names_out()[i1].replace(" ", "_")] = x.toarray()[:, i1]
+        
+        
+  
+  
+  
+  
+  import nltk
+nltk.download("stopwords")
+from nltk.corpus import stopwords
+from string import punctuation
+english_stopwords = stopwords.words('english')
+from nltk.stem import WordNetLemmatizer
+def remove_punct(text):
+    table = {33: ' ', 34: ' ', 35: ' ', 36: ' ', 37: ' ', 38: ' ', 39: ' ', 40: ' ', 41: ' ', 42: ' ', 43: ' ', 44: ' ', 45: ' ', 46: ' ', 47: ' ', 58: ' ', 59: ' ', 60: ' ', 61: ' ', 62: ' ', 63: ' ', 64: ' ', 91: ' ', 92: ' ', 93: ' ', 94: ' ', 95: ' ', 96: ' ', 123: ' ', 124: ' ', 125: ' ', 126: ' '}
+    return text.translate(table)
+lemma = WordNetLemmatizer()
+df = pd.DataFrame(columns=["company", "text"])
+for i1 in js:
+    df = df.append({"company": i1["name"], "text": " ".join(i1["texts"])}, ignore_index=True)
+        
+        
+        
+        
+import nltk
+from nltk.corpus import stopwords
+from string import punctuation
+english_stopwords = stopwords.words('russian')
+import pymorphy2
+def remove_punct(text):
+    table = {33: ' ', 34: ' ', 35: ' ', 36: ' ', 37: ' ', 38: ' ', 39: ' ', 40: ' ', 41: ' ', 42: ' ', 43: ' ', 44: ' ', 45: ' ',46: " ", 47: ' ', 58: ' ', 59: ' ', 60: ' ', 61: ' ', 62: ' ', 63: ' ', 64: ' ', 91: ' ', 92: ' ', 93: ' ', 94: ' ', 95: ' ', 96: ' ', 123: ' ', 124: ' ', 125: ' ', 126: ' '}
+    return text.translate(table)
+morph = pymorphy2.MorphAnalyzer()
+
+def norm_word(w):
+    try:
+        return morph.parse(w)[0].inflect({'sing', 'nomn'}).word
+    except:
+        return w
+    
+def is_keyword(x):
+    try:
+        p = morph.parse(x)[0]
+        return p.tag.POS in ('NOUN', 'ADJF')
+    except:
+        return False
+
+
+df['text'] = df['text'].map(lambda x: x.replace("\xa0", " "))
+df['text'] = df['text'].map(lambda x: x.replace("©", " "))
+df['text'] = df['text'].map(lambda x: x.lower())
+df['text'] = df['text'].map(lambda x: remove_punct(x))
+df['text'] = df['text'].map(lambda x: x.split(' '))
+df['text'] = df['text'].map(lambda x: [token for token in x if token not in english_stopwords\
+                                                                      and token != " " \
+                                                                      and token.strip() not in punctuation])
+df['text'] = df['text'].map(lambda x: [norm_word(word) for word in x])
+df['text'] = df['text'].map(lambda x: [word for word in x if is_keyword(word)])
+
+
+df['text'] = df['text'].map(lambda x: ' '.join(x))
+  
+  
+  from sklearn.feature_extraction.text import TfidfVectorizer
+tfidf = TfidfVectorizer(ngram_range=(1, 2))
+x = tfidf.fit_transform(df["text"])
+for i in x.toarray().argsort()[:, -50:]:
+    for i1 in i:
+        df["keyword_"+tfidf.get_feature_names_out()[i1].replace(" ", "_")] = x.toarray()[:, i1]
+  
+  
+  
+  
+  df_for_clus = pd.DataFrame(columns=["company", "text"])
+for i in js:
+    for i1 in i["texts"]:
+        df_for_clus = df_for_clus.append({"company": i["name"], "text": i1}, ignore_index=True)
+import nltk
+from nltk.corpus import stopwords
+from string import punctuation
+english_stopwords = stopwords.words('russian')
+import pymorphy2
+def remove_punct(text):
+    table = {33: ' ', 34: ' ', 35: ' ', 36: ' ', 37: ' ', 38: ' ', 39: ' ', 40: ' ', 41: ' ', 42: ' ', 43: ' ', 44: ' ', 45: ' ',46: " ", 47: ' ', 58: ' ', 59: ' ', 60: ' ', 61: ' ', 62: ' ', 63: ' ', 64: ' ', 91: ' ', 92: ' ', 93: ' ', 94: ' ', 95: ' ', 96: ' ', 123: ' ', 124: ' ', 125: ' ', 126: ' '}
+    return text.translate(table)
+morph = pymorphy2.MorphAnalyzer()
+
+def norm_word(w):
+    try:
+        return morph.parse(w)[0].inflect({'sing', 'nomn'}).word
+    except:
+        return w
+    
+def is_keyword(x):
+    try:
+        p = morph.parse(x)[0]
+        return p.tag.POS in ('NOUN', 'ADJF')
+    except:
+        return False
+
+
+df_for_clus['text'] = df_for_clus['text'].map(lambda x: x.replace("\xa0", " "))
+df_for_clus['text'] = df_for_clus['text'].map(lambda x: x.replace("©", " "))
+df_for_clus['text'] = df_for_clus['text'].map(lambda x: x.lower())
+df_for_clus['text'] = df_for_clus['text'].map(lambda x: remove_punct(x))
+df_for_clus['text'] = df_for_clus['text'].map(lambda x: x.split(' '))
+df_for_clus['text'] = df_for_clus['text'].map(lambda x: [token for token in x if token not in english_stopwords\
+                                                                      and token != " " \
+                                                                      and token.strip() not in punctuation])
+df_for_clus['text'] = df_for_clus['text'].map(lambda x: [norm_word(word) for word in x])
+df_for_clus['text'] = df_for_clus['text'].map(lambda x: [word for word in x if is_keyword(word)])
+df_for_clus['text'] = df_for_clus['text'].map(lambda x: ' '.join(x))
+
+new_tf = TfidfVectorizer()
+x1 = new_tf.fit_transform(df_for_clus["text"])
+
+from sklearn.cluster import AgglomerativeClustering
+clustering = AgglomerativeClustering(n_clusters=None, distance_threshold=0.6, affinity='cosine', linkage='average').fit(x1.toarray())
+   df_for_clus.insert(column="theme", value=clustering.labels_, loc=2)     
+        df_for_clus
+themes=[]
+i = 0
+for i1 in js:
+    new_row = {}
+    nw = i1["name"]
+    while nw == df_for_clus["company"][i] and i < len(df_for_clus["company"]) - 1:
+        if df_for_clus["theme"][i] not in new_row:
+            new_row[df_for_clus["theme"][i]] = 1
+        else:
+            new_row[df_for_clus["theme"][i]] += 1
+        i+=1
+    themes.append(new_row)
+if clustering.labels_[-1] not in new_row:
+    new_row[clustering.labels_[-1]] = 1
+else:
+    new_row[clustering.labels_[-1]] += 1
+themes[-1] = new_row    
