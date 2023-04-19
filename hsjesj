@@ -14,3 +14,6 @@ for _, row in test_ds.dataset.data.items():
 error = error / count
 
 print(f'baseline error: {error}')
+
+
+df.groupby(df.index.map(lambda x : datetime.datetime(year=x.year, month=x.month, day=x.day, hour=x.hour, minute=x.minute, second=0))).agg(['mean'])
