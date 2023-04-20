@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import QWidget, QMessageBox, QApplication, QMainWindow
 from qtpy import uic
 import traceback
 from joblib import dump, load
+import numpy as np
 import torch
 import pandas as pd
 import numpy as np
@@ -16,6 +17,60 @@ from sklearn.preprocessing import StandardScaler
 import pandas as pd
 import numpy as np
 
+USE_CUDA = True
+device = 'cpu'
+nhid = 20
+n_dnn_layers = 2
+nout = 1
+sequence_len = 100
+ninp = 2
+
+
+class LSTMForecaster(nn.Module):
+
+    def __init__(self, n_features, n_hidden, n_outputs, sequence_len, n_lstm_layers=1, n_deep_layers=10, use_cuda=False,
+                 dropout=0.2):
+        super().__init__()
+
+        self.n_lstm_layers = n_lstm_layers
+        self.nhid = n_hidden
+        self.use_cuda = use_cuda
+
+        self.lstm = nn.LSTM(n_features,
+                            n_hidden,
+                            num_layers=n_lstm_layers,
+                            batch_first=True)
+        self.fc1 = nn.Linear(n_hidden * sequence_len, n_hidden)
+        self.dropout = nn.Dropout(p=dropout)
+
+        dnn_layers = []
+        for i in range(n_deep_layers):
+            if i == n_deep_layers - 1:
+                dnn_layers.append(nn.ReLU())
+                dnn_layers.append(nn.Linear(nhid, n_outputs))
+            else:
+                dnn_layers.append(nn.ReLU())
+                dnn_layers.append(nn.Linear(nhid, nhid))
+                if dropout:
+                    dnn_layers.append(nn.Dropout(p=dropout))
+        self.dnn = nn.Sequential(*dnn_layers)
+
+    def forward(self, x):
+
+        hidden_state = torch.zeros(self.n_lstm_layers, x.shape[0], self.nhid)
+        cell_state = torch.zeros(self.n_lstm_layers, x.shape[0], self.nhid)
+
+        if self.use_cuda:
+            hidden_state = hidden_state.to(device)
+            cell_state = cell_state.to(device)
+
+        self.hidden = (hidden_state, cell_state)
+
+        x, h = self.lstm(x, self.hidden)
+        x = self.dropout(x.contiguous().view(x.shape[0], -1))
+        x = self.fc1(x)
+        return self.dnn(x)
+
 
 class Example(QMainWindow):
 
@@ -27,14 +82,22 @@ class Example(QMainWindow):
 
     def click(self):
         test = str(self.textEdit.toPlainText())
-        df = pd.read_csv(test)
+        df = pd.read_csv(test, parse_dates=True)
+        df.index = pd.to_datetime(df.index)
         scaler = load('std_scaler.bin')
         for i, key in enumerate(scaler.keys()):
             norm = scaler[key].transform(df.iloc[:, i].values.reshape(-1, 1))
             df.iloc[:, i] = norm
         model = torch.load(r"C:\Users\Gosha Kvaratskheliia\PycharmProjects\pythonyandex\model")
         model.eval()
-        self.lineEdit_2.setText(str(int(model.predict(x1)[0])))
+        df = torch.Tensor(df.values)
+        testloader = DataLoader(df, batch_size=16, shuffle=False, drop_last=True)
+        model.eval()
+        for x in testloader:
+            with torch.no_grad():
+                p = model(x)
+        self.lineEdit_2.setText(str(int(StandardScaler.inverse_transform(p))))
+
 
 def excepthook(exc_type, exc_value, exc_tb):
     tb = "".join(traceback.format_exception(exc_type, exc_value, exc_tb))
