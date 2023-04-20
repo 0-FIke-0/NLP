@@ -84,17 +84,23 @@ class Example(QMainWindow):
         test = str(self.textEdit.toPlainText())
         df = pd.read_csv(test, parse_dates=True)
         df.index = pd.to_datetime(df.index)
-        scaler = load('std_scaler.bin')
-        for i, key in enumerate(scaler.keys()):
-            norm = scaler[key].transform(df.iloc[:, i].values.reshape(-1, 1))
-            df.iloc[:, i] = norm
+        scalers = {}
+        for x in df.columns:
+            scaler = StandardScaler()
+            scalers[x] = scaler.fit(df[x].values.reshape(-1, 1))
+
+        norm_df = df.copy()
+        for i, key in enumerate(scalers.keys()):
+            norm = scalers[key].transform(norm_df.iloc[:, i].values.reshape(-1, 1))
+            norm_df.iloc[:, i] = norm
         model = torch.load(r"C:\Users\Gosha Kvaratskheliia\PycharmProjects\pythonyandex\model")
         model.eval()
-        df = torch.Tensor(df.values)
+        df = torch.Tensor(norm_df.values)
         model.eval()
         x = df.unsqueeze(dim=0)
         p = model(x)
-        self.lineEdit_2.setText(str(int(StandardScaler.inverse_transform(X=p))))
+        p = p.detach().numpy()
+        self.lineEdit_2.setText(str(scaler.inverse_transform(X=p)))
 
 
 def excepthook(exc_type, exc_value, exc_tb):
