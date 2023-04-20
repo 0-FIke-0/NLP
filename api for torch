@@ -91,12 +91,10 @@ class Example(QMainWindow):
         model = torch.load(r"C:\Users\Gosha Kvaratskheliia\PycharmProjects\pythonyandex\model")
         model.eval()
         df = torch.Tensor(df.values)
-        testloader = DataLoader(df, batch_size=16, shuffle=False, drop_last=True)
         model.eval()
-        for x in testloader:
-            with torch.no_grad():
-                p = model(x)
-        self.lineEdit_2.setText(str(int(StandardScaler.inverse_transform(p))))
+        x = df.unsqueeze(dim=0)
+        p = model(x)
+        self.lineEdit_2.setText(str(int(StandardScaler.inverse_transform(X=p))))
 
 
 def excepthook(exc_type, exc_value, exc_tb):
